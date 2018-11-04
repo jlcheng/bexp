@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 )
 
@@ -27,7 +28,7 @@ func Cli(searchStr string) error {
 	defer index.Close()
 
 	//registry.RegisterHighlighter("ansi", ansi.Constructor)
-
+	searchStr = "TODO DEADLINE"
 	q := query.NewQueryStringQuery(searchStr)
 	sr := bleve.NewSearchRequest(q)
 	sr.Fields = []string{"Body"}
@@ -56,7 +57,7 @@ func Cli(searchStr string) error {
 		}
 
 		for field := range hit.Fragments {
-			fmt.Printf("highlight for %v: %v\n", field, hit.Fragments[field])
+			fmt.Printf(" fragements for %v: %v of length %v\n", field, reflect.TypeOf(hit.Fragments[field]), len(hit.Fragments[field]))
 		}
 
 	}
