@@ -9,15 +9,16 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"path/filepath"
 	"strings"
-	_ "net/http/pprof"
+	"time"
 )
 
 const (
 	BODY = "Body"
-	BATCH_SIZE = 1000
+	BATCH_SIZE = 100
 )
 
 
@@ -32,22 +33,23 @@ func OOMIndex(useScorch bool, dataDir, idxDir string) error {
 	}()
 
 
-	var idx bleve.Index
+	var index bleve.Index
 	var err error
 	if useScorch {
-		idx, err = bleve.NewUsing(idxDir, NewIndexMapping(), scorch.Name, scorch.Name, nil)
+		index, err = bleve.NewUsing(idxDir, NewIndexMapping(), scorch.Name, scorch.Name, nil)
 	} else {
-		idx, err = bleve.New(idxDir, NewIndexMapping())
+		index, err = bleve.New(idxDir, NewIndexMapping())
 	}
 	if err != nil {
 		return err
 	}
 
 	idxHelper := indexHelper{
-		index: idx,
+		index:     index,
 		totalSize: 0,
-		count: 0,
-		batch: idx.NewBatch(),
+		count:     0,
+		batch:     index.NewBatch(),
+		idxStime: time.Now(),
 	}
 
 	dataInfo, err := os.Stat(dataDir)
@@ -76,13 +78,12 @@ func NewIndexMapping() mapping.IndexMapping {
 	return imap
 }
 
-
 type indexHelper struct {
 	index bleve.Index
+	batch *bleve.Batch
 	totalSize int64
 	count int
-
-	batch *bleve.Batch
+	idxStime time.Time
 }
 
 func (i *indexHelper) indexFiles(path string, info os.FileInfo) error {
@@ -128,8 +129,25 @@ func (i *indexHelper) indexFiles(path string, info os.FileInfo) error {
 			return err
 		}
 		i.batch.Reset()
+		i.batch = i.index.NewBatch()
+		i.printProgress()
 	}
 
+	return nil
+}
+
+func (i *indexHelper) printProgress() {
+	fmt.Printf("indexed %v files, %v kb, %v seconds elapsed\n", i.count, i.totalSize/1024, time.Since(i.idxStime))
+
+}
+
+func (i *indexHelper) complete() error {
+	if i.batch != nil {
+		if err := i.index.Batch(i.batch); err != nil {
+			return err
+		}
+	}
+	i.printProgress()
 	return nil
 }
 
