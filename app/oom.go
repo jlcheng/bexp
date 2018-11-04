@@ -57,6 +57,11 @@ func OOMIndex(useScorch bool, dataDir, idxDir string) error {
 	if err != nil {
 		return err
 	}
+	err = idxHelper.complete()
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -131,6 +136,7 @@ func (i *indexHelper) indexFiles(path string, info os.FileInfo) error {
 		i.batch.Reset()
 		i.batch = i.index.NewBatch()
 		i.printProgress()
+		fmt.Printf("indexing %v\n", path)
 	}
 
 	return nil
