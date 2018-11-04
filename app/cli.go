@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/blevesearch/bleve"
 	"github.com/blevesearch/bleve/index/scorch"
+	"github.com/blevesearch/bleve/search/highlight/highlighter/ansi"
 	"github.com/blevesearch/bleve/search/query"
 	"github.com/mitchellh/go-homedir"
 	"io/ioutil"
@@ -25,12 +26,14 @@ func Cli(searchStr string) error {
 	}
 	defer index.Close()
 
+	//registry.RegisterHighlighter("ansi", ansi.Constructor)
+
 	q := query.NewQueryStringQuery(searchStr)
 	sr := bleve.NewSearchRequest(q)
 	sr.Fields = []string{"Body"}
 	sr.IncludeLocations = true
 	sr.Explain = true
-	sr.Highlight = bleve.NewHighlight()
+	sr.Highlight = bleve.NewHighlightWithStyle(ansi.Name)
 	results, err := index.Search(sr)
 	if err != nil {
 		return err
@@ -52,7 +55,14 @@ func Cli(searchStr string) error {
 			}
 		}
 
+		for field := range hit.Fragments {
+			fmt.Printf("highlight for %v: %v\n", field, hit.Fragments[field])
+		}
+
 	}
+
+
+
 
 	return nil
 }
