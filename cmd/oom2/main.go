@@ -1,28 +1,27 @@
-package app
+package main
 
 import (
-	"errors"
+	"bufio"
+	"flag"
 	"fmt"
 	"github.com/blevesearch/bleve"
 	"github.com/blevesearch/bleve/index/scorch"
 	"github.com/blevesearch/bleve/mapping"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 )
 
-const (
-	BODY = "Body"
-	BATCH_SIZE = 100
-)
+func main() {
+	var idxDir string
+	var useScorch bool
+	flag.StringVar(&idxDir, "idxDir", "", "idxDir")
+	flag.BoolVar(&useScorch, "scorch", false, "scorch")
 
-
-func OOMIndex(useScorch bool, dataDirs, idxDir string) error {
-	if info, _ := os.Stat(idxDir); info != nil {
-		return errors.New("idxDir not-empty, will not proceed")
-	}
+	flag.Parse()
 
 	var index bleve.Index
 	var err error
@@ -32,7 +31,7 @@ func OOMIndex(useScorch bool, dataDirs, idxDir string) error {
 		index, err = bleve.New(idxDir, NewIndexMapping())
 	}
 	if err != nil {
-		return err
+		log.Fatal(err)
 	}
 
 	idxHelper := indexHelper{
@@ -43,21 +42,31 @@ func OOMIndex(useScorch bool, dataDirs, idxDir string) error {
 		idxStime: time.Now(),
 	}
 
-	for _, dataDir := range strings.Split(dataDirs,":") {
-		fmt.Println("indexing", dataDir)
-		dataInfo, err := os.Stat(dataDir)
-		err = idxHelper.indexFiles(dataDir, dataInfo)
-		if err != nil {
-			return err
-		}
-		err = idxHelper.complete()
-	}
-	if err != nil {
-		return err
-	}
 
-	return nil
+	scanner := bufio.NewScanner(os.Stdin)
+	for scanner.Scan() {
+		file := scanner.Text()
+		if strings.HasPrefix(file, "#") {
+			continue
+		}
+		fmt.Println("index", file)
+		doc := SimpleDoc{
+			Body: debugReadFile(file),
+		}
+		err = idxHelper.batch.Index(file, doc)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+	index.Batch(idxHelper.batch)
+
 }
+
+const (
+	BODY = "Body"
+	BATCH_SIZE = 100
+)
+
 
 type SimpleDoc struct {
 	Body string

@@ -61,7 +61,7 @@ func init() {
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
 	rootCmd.Flags().BoolVarP(&useScorch, "useScorch", "s", false, "use scorch or not")
-	rootCmd.Flags().StringVarP(&dataDir, "dataDir", "d", "", "dataDir")
+	rootCmd.Flags().StringVarP(&dataDir, "dataDirs", "d", "", "dataDirs")
 	rootCmd.Flags().StringVarP(&idxDir, "idxDir", "i", "", "idxDir")
 }
 
