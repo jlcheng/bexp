@@ -5,5 +5,10 @@ Problem 1: High CPU use in the 4gt indexing server. Cause unknown.
 Problem 2: Certain queries fails to return results.
 
 This calls for revisiting existing code, documenting them, and purging obsolete experiments.
+
+The learning from today's work on token_filter_replace_test.go is that while the TokenFilter interace is clean and
+simple, bleve's registry API is anything but. If you want to use a custom TokenFilter, you need to also create a
+corresponding TokenFilterConstructor implementation. 
+
 * Plan
 
